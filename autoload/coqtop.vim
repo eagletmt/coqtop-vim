@@ -15,10 +15,11 @@ function! coqtop#start()"{{{
     setlocal buftype=nofile bufhidden=hide noswapfile
   wincmd p
   let b:coq.bufnr = l:bufnr
-  let l:msg = b:coq.proc.stdout.read(-1, 100)
+  let l:buf = s:read_until_prompt(1)
+  let l:buf = substitute(l:buf, '</prompt>.*$', '', '')
+  let [l:msg, l:prompt] = split(l:buf, '<prompt>')
   call coqtop#display(split(l:msg, '\n'))
 
-  let l:prompt = b:coq.proc.stderr.read(-1, 100)
   let b:coq.backtrack = {}
   let b:coq.backtrack[0] = s:parse_prompt(l:prompt)
 
@@ -106,11 +107,12 @@ function! s:backtrack(end) abort"{{{
 
   let l:backtrack = b:coq.backtrack[l:end]
   call b:coq.proc.stdin.write(printf("Backtrack %d %d 0.\n", l:backtrack.env_state, l:backtrack.proof_state))
-  let l:msg = b:coq.proc.stdout.read(-1, 100)
+  let l:buf = s:read_until_prompt(1)
+  let l:buf = substitute(l:buf, '</prompt>.*$', '', '')
+  let [l:msg, l:prompt] = split(l:buf, '<prompt>')
   if !empty(l:msg)
     call coqtop#display(split(l:msg, '\n'))
   endif
-  let l:prompt = b:coq.proc.stderr.read(-1, 100)
   if match(l:msg, '^Error') == -1
     let b:coq.backtrack[l:end] = s:parse_prompt(l:prompt)
     let b:coq.last_line = l:end
@@ -121,31 +123,37 @@ function! s:backtrack(end) abort"{{{
 endfunction"}}}
 
 function! s:eval_to(end) abort"{{{
-  let l:last_msg = ''
   let l:lines = getline(b:coq.last_line+1, a:end)
-  let l:lineno = b:coq.last_line+1
-  for l:line in l:lines
-    let l:line = substitute(l:line, '^\s*', '', '')
-    let l:line = substitute(l:line, '\s*$', '', '')
-    if !empty(l:line)
-      call b:coq.proc.stdin.write(l:line . "\n")
-      let l:msg = b:coq.proc.stdout.read(-1, 100)
-      if !empty(l:msg)
-        let l:last_msg = l:msg
-      endif
-      let l:prompt = b:coq.proc.stderr.read(-1, 100)
-      let b:coq.backtrack[l:lineno] = s:parse_prompt(l:prompt)
-      let b:coq.last_line = l:lineno
-    endif
+  let l:input = join(l:lines, "\n") . "\n"
+  let l:count = strlen(substitute(l:input, '[^.]', '', 'g'))
+  if l:count == 0
+    return
+  endif
+  call b:coq.proc.stdin.write(l:input)
+  let l:buf = s:read_until_prompt(l:count)
+  let l:lineno = b:coq.last_line + 1
+  for l:output in split(l:buf, '</prompt>')
+    while match(l:lines[l:lineno - b:coq.last_line - 1], '\.\s*$') == -1
+      let l:lineno += 1
+    endwhile
+    let [l:msg, l:prompt] = split(l:output, '<prompt>')
+    let b:coq.backtrack[l:lineno] = s:parse_prompt(l:prompt)
     let l:lineno += 1
   endfor
-  if !empty(l:last_msg)
-    call coqtop#display(split(l:last_msg, '\n'))
-  endif
+  let b:coq.last_line = l:lineno - 1
+  call coqtop#display(split(l:msg, '\n'))
+endfunction"}}}
+
+function! s:read_until_prompt(n)"{{{
+  let l:buf = ''
+  while match(l:buf, '</prompt>', 0, a:n) == -1
+    let l:buf .= b:coq.proc.stdout.read(-1, 100)
+  endwhile
+  return l:buf
 endfunction"}}}
 
 function! s:parse_prompt(prompt) abort"{{{
-  let l:prompt = matchstr(a:prompt, '<prompt>\zs.*\ze</prompt>')
+  let l:prompt = substitute(a:prompt, '^\s*', '', '')
   let l:dict = {}
   let l:id_and_nums = split(l:prompt, '\s*<\s*')
   let l:dict.id = l:id_and_nums[0]
