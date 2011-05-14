@@ -26,12 +26,16 @@ function! coqtop#start()"{{{
   command! -buffer CoqQuit call coqtop#quit()
   command! -buffer CoqClear call coqtop#clear()
   command! -buffer CoqGoto call coqtop#goto(<line2>)
+  command! -buffer -nargs=1 CoqPrint call coqtop#print(<q-args>)
+  command! -buffer -nargs=1 CoqSearchAbout call coqtop#search_about(<q-args>)
 
   inoremap <buffer> <expr> <Plug>(coqtop-goto) <SID>coqgoto_i()
   if !exists('g:coqtop_no_default_mappings') || !g:coqtop_no_default_mappings
     nnoremap <buffer> <silent> <LocalLeader>q :<C-u>CoqQuit<CR>
     nnoremap <buffer> <silent> <LocalLeader>c :<C-u>CoqClear<CR>
     nnoremap <buffer> <silent> <LocalLeader>g :<C-u>CoqGoto<CR>
+    nnoremap <buffer> <silent> <LocalLeader>p :<C-u>CoqPrint<Space>
+    nnoremap <buffer> <silent> <LocalLeader>a :<C-u>CoqSearchAbout<Space>
     imap <buffer> <C-g> <Plug>(coqtop-goto)
   endif
 
@@ -179,4 +183,20 @@ function! coqtop#display(lines)"{{{
   finally
     execute l:cur 'wincmd w'
   endtry
+endfunction"}}}
+
+function! s:exec_and_display(cmd)"{{{
+  call b:coq.proc.stdin.write(a:cmd)
+  let l:buf = s:read_until_prompt(1)
+  let l:buf = substitute(l:buf, '</prompt>.*$', '', '')
+  let [l:msg, l:prompt] = split(l:buf, '<prompt>')
+  call coqtop#display(split(l:msg, '\n'))
+endfunction"}}}
+
+function! coqtop#print(id)"{{{
+  call s:exec_and_display('Print ' . a:id . ".\n")
+endfunction"}}}
+
+function! coqtop#search_about(input)"{{{
+  call s:exec_and_display('SearchAbout ' . a:input . ".\n")
 endfunction"}}}
