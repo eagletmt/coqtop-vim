@@ -63,8 +63,14 @@ function! coqtop#quit()"{{{
   call b:coq.proc.stdin.write("Quit.\n")
   call b:coq.proc.waitpid()
 
-  execute bufwinnr(b:coq.bufnr) 'wincmd p'
-  close
+  let l:winnr = bufwinnr(b:coq.bufnr)
+  let l:cur = winnr()
+  if l:winnr != -1
+    execute l:winnr 'wincmd p'
+    close
+    execute l:cur 'wincmd p'
+    let l:winnr = bufwinnr(b:coq.bufnr)
+  endif
 
   unlet b:coq
   augroup coqtop
