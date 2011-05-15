@@ -134,11 +134,11 @@ endfunction"}}}
 
 function! s:eval_to(end) abort"{{{
   let l:lines = getline(b:coq.last_line+1, a:end)
-  let l:input = join(l:lines, "\n") . "\n"
-  let l:count = strlen(substitute(l:input, '[^.]', '', 'g'))
+  let l:count = s:count_dots(l:lines, b:coq.last_line+1)
   if l:count == 0
     return
   endif
+  let l:input = join(l:lines, "\n") . "\n"
   call b:coq.proc.stdin.write(l:input)
   let l:buf = s:read_until_prompt(l:count)
   let l:lineno = b:coq.last_line + 1
@@ -152,6 +152,22 @@ function! s:eval_to(end) abort"{{{
   endfor
   let b:coq.last_line = l:lineno - 1
   call coqtop#display(split(l:msg, '\n'))
+endfunction"}}}
+
+function! s:count_dots(lines, lineno)"{{{
+  let l:count = 0
+  let l:lineno = a:lineno
+  for l:line in a:lines
+    let l:pos = match(l:line, '\.')
+    while l:pos != -1
+      if synIDattr(synID(l:lineno, l:pos+1, 1), 'name') !~# 'Comment'
+        let l:count += 1
+      endif
+      let l:pos = match(l:line, '\.', l:pos+1)
+    endwhile
+    let l:lineno += 1
+  endfor
+  return l:count
 endfunction"}}}
 
 function! s:read_until_prompt(n)"{{{
