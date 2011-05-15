@@ -34,4 +34,4 @@ Mapped to `<LocalLeader>p` by default.
 ### :CoqSearchAbout
 Same as `SearchAbout` vernacular command.
 
-Mapped to `<LocalLeader>s` by default.
+Mapped to `<LocalLeader>a` by default.
