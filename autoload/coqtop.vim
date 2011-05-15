@@ -85,6 +85,15 @@ function! coqtop#quit()"{{{
   delcommand CoqClear
   delcommand CoqGoto
 
+  if !exists('g:coqtop_no_default_mappings') || !g:coqtop_no_default_mappings
+    nunmap <buffer> <LocalLeader>q
+    nunmap <buffer> <LocalLeader>c
+    nunmap <buffer> <LocalLeader>g
+    nunmap <buffer> <LocalLeader>p
+    nunmap <buffer> <LocalLeader>a
+    iunmap <buffer> <C-g>
+  endif
+
   setlocal modifiable
 endfunction"}}}
 
