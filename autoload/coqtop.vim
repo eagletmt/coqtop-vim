@@ -163,14 +163,20 @@ function! s:coq.eval_to(end) abort"{{{
   call self.proc.stdin.write(l:input)
   let l:buf = self.read_until_prompt(l:count)
   let l:lineno = self.last_line + 1
-  for l:output in split(l:buf, '</prompt>')
-    while match(l:lines[l:lineno - self.last_line - 1], '\.\s*$') == -1
+  let l:outputs = split(l:buf, '</prompt>')
+  let l:len = len(l:outputs)
+  let l:i = 0
+  while l:i < l:len
+    let l:r = s:count_dots([l:lines[l:lineno - self.last_line - 1]], l:lineno)
+    while l:r == 0
       let l:lineno += 1
+      let l:r = s:count_dots([l:lines[l:lineno - self.last_line - 1]], l:lineno)
     endwhile
-    let [l:msg, l:prompt] = split(l:output, '<prompt>')
+    let [l:msg, l:prompt] = split(l:outputs[l:i], '<prompt>')
     let self.backtrack[l:lineno] = s:parse_prompt(l:prompt)
     let l:lineno += 1
-  endfor
+    let l:i += l:r
+  endwhile
   let self.last_line = l:lineno - 1
   call self.display(split(l:msg, '\n'))
 endfunction"}}}
