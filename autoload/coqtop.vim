@@ -85,6 +85,8 @@ function! s:coq.quit()"{{{
   delcommand CoqQuit
   delcommand CoqClear
   delcommand CoqGoto
+  delcommand CoqPrint
+  delcommand CoqSearchAbout
 
   if !exists('g:coqtop_no_default_mappings') || !g:coqtop_no_default_mappings
     nunmap <buffer> <LocalLeader>q
