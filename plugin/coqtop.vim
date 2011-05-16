@@ -7,5 +7,11 @@ function! s:start()
     echohl None
     return
   endif
+  if !executable('coqtop')
+    echohl ErrorMsg
+    echo 'cannot execute coqtop!'
+    echohl None
+    return
+  endif
   let b:coq = coqtop#new()
 endfunction
