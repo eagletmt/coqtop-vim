@@ -185,6 +185,11 @@ function! s:count_dots(lines, lineno)"{{{
   let l:count = 0
   let l:lineno = a:lineno
   for l:line in a:lines
+    if match(l:line, '\<Require Import\>') != -1
+      let l:count += 1
+      let l:lineno += 1
+      continue
+    endif
     let l:pos = match(l:line, '\.')
     while l:pos != -1
       if synIDattr(synID(l:lineno, l:pos+1, 1), 'name') !~# 'Comment'
