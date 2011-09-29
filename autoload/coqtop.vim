@@ -9,6 +9,7 @@ let s:coq = {
       \ 'bufnr': -1,
       \ 'last_line': 0,
       \ 'backtrack': {},
+      \ 'match_id': 0,
       \ }
 
 function! s:coq.start()"{{{
@@ -106,7 +107,9 @@ function! s:coq.clear()"{{{
   let self.proc = vimproc#popen2(['coqtop', '-emacs-U'])
   let self.last_line = 0
   let self.backtrack = {}
-  match none
+  if self.match_id > 0
+    let self.match_id = matchdelete(self.match_id)
+  end
   let l:buf = self.read_until_prompt(1)
   let l:buf = substitute(l:buf, '</prompt>.*$', '', '')
   let [l:msg, l:prompt] = split(l:buf, '<prompt>')
@@ -122,7 +125,10 @@ function! s:coq.goto(end) abort"{{{
   "let l:pats = range(1, self.last_line)
   "call map(l:pats, '"\\%" . v:val . "l"')
   "execute 'match coqtopFrozen /' . join(l:pats, '\|') . '/'
-  execute 'match coqtopFrozen /\%' . self.last_line . 'l/'
+  if self.match_id > 0
+    call matchdelete(self.match_id)
+  endif
+  let self.match_id = matchadd('coqtopFrozen', '\%' . self.last_line . 'l')
 endfunction"}}}
 
 function! s:coq.do_backtrack(end) abort"{{{
