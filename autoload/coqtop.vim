@@ -73,9 +73,9 @@ function! s:coq.quit()"{{{
   let l:winnr = bufwinnr(self.bufnr)
   let l:cur = winnr()
   if l:winnr != -1
-    execute l:winnr 'wincmd p'
+    execute l:winnr 'wincmd w'
     close
-    execute l:cur 'wincmd p'
+    execute l:cur 'wincmd w'
   endif
 
   unlet b:coq
